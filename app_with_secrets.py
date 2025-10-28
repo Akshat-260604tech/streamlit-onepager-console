@@ -405,7 +405,7 @@ def render_requests_table(records: List[OnePagerRecord], console: AdminConsole):
     # Action buttons
     st.subheader("🔧 Actions")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         if st.button("📊 Export Data"):
@@ -420,6 +420,78 @@ def render_requests_table(records: List[OnePagerRecord], console: AdminConsole):
     with col2:
         if st.button("🔄 Refresh"):
             st.rerun()
+    
+    with col3:
+        if st.button("🧪 Test Excel Blob"):
+            test_excel_blob_save(console)
+
+def test_excel_blob_save(console: AdminConsole):
+    """Test saving Excel blob data"""
+    try:
+        import asyncio
+        from datetime import datetime
+        
+        # Create a test record with Excel blob data
+        test_record = OnePagerRecord(
+            request_id=f"test_excel_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            company_name="Test Company Excel",
+            website_url="https://testcompany.com",
+            status="success",
+            generated_at=datetime.now().isoformat(),
+            duration_ms=15000,
+            folder_title="test_excel_folder",
+            base_path="one-pagers/test_excel",
+            container="bynd-dev",
+            pptx_filename="test.pptx",
+            pptx_blob_url="https://example.com/test.pptx",
+            pptx_blob_path="one-pagers/test_excel/test.pptx",
+            metadata_blob_url="https://example.com/test_metadata.json",
+            excel_provided=True,
+            excel_filename="test_data.xlsx",
+            excel_size=50000,
+            excel_blob_url="https://example.com/test_data.xlsx",
+            excel_blob_path="one-pagers/test_excel/excel/test_data.xlsx",
+            sections_status={"about": {"ok": True}},
+            sections_response={"about": "Test response"},
+            section_sources={"about": ["https://testcompany.com/about"]},
+            product_images=["https://example.com/product1.jpg"],
+            products=[{"name": "Test Product", "price": "$99"}],
+            company_logo="https://example.com/logo.png",
+            azure_upload_ok=True,
+            azure_upload_error=None,
+            warnings=["Test warning"],
+            error_type=None,
+            error_message=None
+        )
+        
+        st.info("🧪 Testing Excel blob field saving...")
+        st.write(f"**Test Excel Blob URL:** {test_record.excel_blob_url}")
+        st.write(f"**Test Excel Blob Path:** {test_record.excel_blob_path}")
+        
+        # Save the record
+        if console.db_service:
+            saved_record = asyncio.run(console.db_service.create_one_pager_record(test_record))
+            
+            if saved_record:
+                st.success("✅ Test record saved successfully!")
+                st.write(f"**Saved Excel Blob URL:** {saved_record.excel_blob_url}")
+                st.write(f"**Saved Excel Blob Path:** {saved_record.excel_blob_path}")
+                
+                # Verify the data matches
+                if (saved_record.excel_blob_url == test_record.excel_blob_url and 
+                    saved_record.excel_blob_path == test_record.excel_blob_path):
+                    st.success("🎉 SUCCESS: Excel blob fields are being saved correctly!")
+                else:
+                    st.error("❌ FAILURE: Excel blob fields don't match!")
+            else:
+                st.error("❌ Failed to save test record")
+        else:
+            st.warning("⚠️ Database service not available (running in demo mode)")
+            
+    except Exception as e:
+        st.error(f"❌ Error during test: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
 
 def render_request_details(records: List[OnePagerRecord]):
     """Render detailed view for selected request"""
