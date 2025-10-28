@@ -28,6 +28,8 @@ class OnePagerRecord(BaseModel):
     excel_provided: bool = False
     excel_filename: Optional[str] = None
     excel_size: Optional[int] = None
+    excel_blob_url: Optional[str] = None
+    excel_blob_path: Optional[str] = None
     sections_status: Optional[Dict[str, Any]] = None
     sections_response: Optional[Dict[str, Any]] = None
     section_sources: Optional[Dict[str, Any]] = None
