@@ -376,8 +376,6 @@ def render_requests_table(records: List[OnePagerRecord], console: AdminConsole):
             return "color: #fd7e14; font-weight: bold"
         return ""
 
-    styled_df = df.style.applymap(style_status, subset=['Status'])
-
     # Display table with pagination
     page_size = 20
     total_pages = len(df) // page_size + (1 if len(df) % page_size > 0 else 0)
@@ -386,11 +384,13 @@ def render_requests_table(records: List[OnePagerRecord], console: AdminConsole):
         page = st.selectbox("Page", range(1, total_pages + 1))
         start_idx = (page - 1) * page_size
         end_idx = start_idx + page_size
-        display_df = styled_df.iloc[start_idx:end_idx]
+        display_df = df.iloc[start_idx:end_idx]
     else:
-        display_df = styled_df
+        display_df = df
 
-    st.dataframe(display_df, use_container_width=True)
+    # Apply styling to the paginated dataframe
+    styled_df = display_df.style.applymap(style_status, subset=['Status'])
+    st.dataframe(styled_df, use_container_width=True)
 
     # Show clickable links for PPTX and Excel URLs
     st.subheader("🔗 Direct Links")
