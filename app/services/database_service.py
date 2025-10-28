@@ -111,10 +111,20 @@ class DatabaseService:
             # Add updated timestamp
             update_data['updated_at'] = datetime.utcnow().isoformat()
 
+            # Remove Excel blob fields if they don't exist in the database yet
+            # This is a temporary workaround until the database schema is updated
+            excel_blob_url = update_data.pop('excel_blob_url', None)
+            excel_blob_path = update_data.pop('excel_blob_path', None)
+
             result = self.client.table('one_pager_reports').update(update_data).eq('id', record_id).execute()
 
             if result.data and len(result.data) > 0:
-                updated_record = OnePagerRecord(**result.data[0])
+                # Add the Excel blob fields back to the updated record
+                updated_data = result.data[0]
+                updated_data['excel_blob_url'] = excel_blob_url
+                updated_data['excel_blob_path'] = excel_blob_path
+
+                updated_record = OnePagerRecord(**updated_data)
                 logger.info(f"Updated one-pager record with ID: {record_id}")
                 return updated_record
             else:
@@ -131,7 +141,14 @@ class DatabaseService:
             result = self.client.table('one_pager_reports').select('*').eq('id', record_id).execute()
 
             if result.data and len(result.data) > 0:
-                return OnePagerRecord(**result.data[0])
+                # Add missing Excel blob fields if they don't exist in the database
+                record_data = result.data[0]
+                if 'excel_blob_url' not in record_data:
+                    record_data['excel_blob_url'] = None
+                if 'excel_blob_path' not in record_data:
+                    record_data['excel_blob_path'] = None
+
+                return OnePagerRecord(**record_data)
             else:
                 logger.warning(f"One-pager record with ID {record_id} not found")
                 return None
@@ -145,7 +162,15 @@ class DatabaseService:
         try:
             result = self.client.table('one_pager_reports').select('*').eq('company_name', company_name).order('created_at', desc=True).execute()
 
-            records = [OnePagerRecord(**record) for record in result.data]
+            records = []
+            for record in result.data:
+                # Add missing Excel blob fields if they don't exist in the database
+                if 'excel_blob_url' not in record:
+                    record['excel_blob_url'] = None
+                if 'excel_blob_path' not in record:
+                    record['excel_blob_path'] = None
+                records.append(OnePagerRecord(**record))
+
             logger.info(f"Found {len(records)} records for company: {company_name}")
             return records
 
@@ -159,7 +184,15 @@ class DatabaseService:
         try:
             result = self.client.table('one_pager_reports').select('*').order('created_at', desc=True).limit(limit).execute()
 
-            records = [OnePagerRecord(**record) for record in result.data]
+            records = []
+            for record in result.data:
+                # Add missing Excel blob fields if they don't exist in the database
+                if 'excel_blob_url' not in record:
+                    record['excel_blob_url'] = None
+                if 'excel_blob_path' not in record:
+                    record['excel_blob_path'] = None
+                records.append(OnePagerRecord(**record))
+
             logger.info(f"Retrieved {len(records)} recent records")
             return records
 
@@ -189,7 +222,14 @@ class DatabaseService:
             result = self.client.table('one_pager_reports').select('*').eq('request_id', request_id).execute()
 
             if result.data and len(result.data) > 0:
-                return OnePagerRecord(**result.data[0])
+                # Add missing Excel blob fields if they don't exist in the database
+                record_data = result.data[0]
+                if 'excel_blob_url' not in record_data:
+                    record_data['excel_blob_url'] = None
+                if 'excel_blob_path' not in record_data:
+                    record_data['excel_blob_path'] = None
+
+                return OnePagerRecord(**record_data)
             else:
                 logger.warning(f"One-pager record with request_id {request_id} not found")
                 return None
@@ -203,7 +243,15 @@ class DatabaseService:
         try:
             result = self.client.table('one_pager_reports').select('*').eq('company_name', company_name).eq('status', 'in-progress').order('created_at', desc=True).execute()
 
-            records = [OnePagerRecord(**record) for record in result.data]
+            records = []
+            for record in result.data:
+                # Add missing Excel blob fields if they don't exist in the database
+                if 'excel_blob_url' not in record:
+                    record['excel_blob_url'] = None
+                if 'excel_blob_path' not in record:
+                    record['excel_blob_path'] = None
+                records.append(OnePagerRecord(**record))
+
             logger.info(f"Found {len(records)} in-progress records for company: {company_name}")
             return records
 
@@ -220,7 +268,14 @@ class DatabaseService:
             result = self.client.table('one_pager_reports').select('*').eq('company_name', company_name).eq('website_url', website_url).gte('created_at', cutoff_time).order('created_at', desc=True).limit(1).execute()
 
             if result.data and len(result.data) > 0:
-                record = OnePagerRecord(**result.data[0])
+                # Add missing Excel blob fields if they don't exist in the database
+                record_data = result.data[0]
+                if 'excel_blob_url' not in record_data:
+                    record_data['excel_blob_url'] = None
+                if 'excel_blob_path' not in record_data:
+                    record_data['excel_blob_path'] = None
+
+                record = OnePagerRecord(**record_data)
                 logger.info(f"Found recent request for {company_name}: {record.request_id} (status: {record.status})")
                 return record
             else:
@@ -236,6 +291,11 @@ class DatabaseService:
             # Add updated timestamp
             update_data['updated_at'] = datetime.utcnow().isoformat()
 
+            # Remove Excel blob fields if they don't exist in the database yet
+            # This is a temporary workaround until the database schema is updated
+            excel_blob_url = update_data.pop('excel_blob_url', None)
+            excel_blob_path = update_data.pop('excel_blob_path', None)
+
             # Build the query
             query = self.client.table('one_pager_reports').update(update_data).eq('id', record_id)
 
@@ -246,7 +306,12 @@ class DatabaseService:
             result = query.execute()
 
             if result.data and len(result.data) > 0:
-                updated_record = OnePagerRecord(**result.data[0])
+                # Add the Excel blob fields back to the updated record
+                updated_data = result.data[0]
+                updated_data['excel_blob_url'] = excel_blob_url
+                updated_data['excel_blob_path'] = excel_blob_path
+
+                updated_record = OnePagerRecord(**updated_data)
                 logger.info(f"Atomically updated one-pager record with ID: {record_id}")
                 return updated_record
             else:
