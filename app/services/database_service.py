@@ -69,6 +69,18 @@ class DatabaseService:
             # Convert Pydantic model to dict, excluding None values for id and timestamps
             data = record_data.model_dump(exclude={'id', 'created_at', 'updated_at'})
 
+            # Remove Excel blob fields if they don't exist in the database yet
+            # This is a temporary workaround until the database schema is updated
+            if 'excel_blob_url' in data:
+                excel_blob_url = data.pop('excel_blob_url')
+            else:
+                excel_blob_url = None
+
+            if 'excel_blob_path' in data:
+                excel_blob_path = data.pop('excel_blob_path')
+            else:
+                excel_blob_path = None
+
             # Add current timestamp
             now = datetime.utcnow().isoformat()
             data['created_at'] = now
@@ -77,7 +89,12 @@ class DatabaseService:
             result = self.client.table('one_pager_reports').insert(data).execute()
 
             if result.data and len(result.data) > 0:
-                created_record = OnePagerRecord(**result.data[0])
+                # Add the Excel blob fields back to the created record
+                created_data = result.data[0]
+                created_data['excel_blob_url'] = excel_blob_url
+                created_data['excel_blob_path'] = excel_blob_path
+
+                created_record = OnePagerRecord(**created_data)
                 logger.info(f"Created one-pager record with ID: {created_record.id}")
                 return created_record
             else:
