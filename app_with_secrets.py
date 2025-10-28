@@ -18,6 +18,18 @@ import json
 # Add the parent directory to the Python path to access the app services
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend_py'))
 
+# Set environment variables from Streamlit secrets before importing services
+try:
+    if 'supabase' in st.secrets:
+        os.environ['SUPABASE_URL'] = st.secrets['supabase']['url']
+        os.environ['SUPABASE_ANON_KEY'] = st.secrets['supabase']['key']
+    else:
+        st.error("❌ Supabase secrets not found. Please configure your Streamlit secrets.")
+        st.stop()
+except Exception as e:
+    st.error(f"❌ Error loading secrets: {str(e)}")
+    st.stop()
+
 from app.services.database_service import DatabaseService, OnePagerRecord
 from app.services.request_manager import request_manager
 
