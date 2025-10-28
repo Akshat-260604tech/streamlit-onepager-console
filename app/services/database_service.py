@@ -69,17 +69,17 @@ class DatabaseService:
             # Convert Pydantic model to dict, excluding None values for id and timestamps
             data = record_data.model_dump(exclude={'id', 'created_at', 'updated_at'})
 
-            # Remove Excel blob fields if they don't exist in the database yet
+            # Store Excel blob fields in sections_status as a temporary workaround
             # This is a temporary workaround until the database schema is updated
-            if 'excel_blob_url' in data:
-                excel_blob_url = data.pop('excel_blob_url')
-            else:
-                excel_blob_url = None
+            excel_blob_url = data.pop('excel_blob_url', None)
+            excel_blob_path = data.pop('excel_blob_path', None)
 
-            if 'excel_blob_path' in data:
-                excel_blob_path = data.pop('excel_blob_path')
-            else:
-                excel_blob_path = None
+            # Store Excel blob info in sections_status if we have it
+            if excel_blob_url or excel_blob_path:
+                if 'sections_status' not in data or data['sections_status'] is None:
+                    data['sections_status'] = {}
+                data['sections_status']['excel_blob_url'] = excel_blob_url
+                data['sections_status']['excel_blob_path'] = excel_blob_path
 
             # Add current timestamp
             now = datetime.utcnow().isoformat()
@@ -89,10 +89,14 @@ class DatabaseService:
             result = self.client.table('one_pager_reports').insert(data).execute()
 
             if result.data and len(result.data) > 0:
-                # Add the Excel blob fields back to the created record
+                # Extract Excel blob fields from sections_status if they exist
                 created_data = result.data[0]
-                created_data['excel_blob_url'] = excel_blob_url
-                created_data['excel_blob_path'] = excel_blob_path
+                if created_data.get('sections_status') and isinstance(created_data['sections_status'], dict):
+                    created_data['excel_blob_url'] = created_data['sections_status'].get('excel_blob_url')
+                    created_data['excel_blob_path'] = created_data['sections_status'].get('excel_blob_path')
+                else:
+                    created_data['excel_blob_url'] = excel_blob_url
+                    created_data['excel_blob_path'] = excel_blob_path
 
                 created_record = OnePagerRecord(**created_data)
                 logger.info(f"Created one-pager record with ID: {created_record.id}")
@@ -111,18 +115,31 @@ class DatabaseService:
             # Add updated timestamp
             update_data['updated_at'] = datetime.utcnow().isoformat()
 
-            # Remove Excel blob fields if they don't exist in the database yet
+            # Store Excel blob fields in sections_status as a temporary workaround
             # This is a temporary workaround until the database schema is updated
             excel_blob_url = update_data.pop('excel_blob_url', None)
             excel_blob_path = update_data.pop('excel_blob_path', None)
 
+            # Store Excel blob info in sections_status if we have it
+            if excel_blob_url or excel_blob_path:
+                if 'sections_status' not in update_data or update_data['sections_status'] is None:
+                    update_data['sections_status'] = {}
+                if not isinstance(update_data['sections_status'], dict):
+                    update_data['sections_status'] = {}
+                update_data['sections_status']['excel_blob_url'] = excel_blob_url
+                update_data['sections_status']['excel_blob_path'] = excel_blob_path
+
             result = self.client.table('one_pager_reports').update(update_data).eq('id', record_id).execute()
 
             if result.data and len(result.data) > 0:
-                # Add the Excel blob fields back to the updated record
+                # Extract Excel blob fields from sections_status if they exist
                 updated_data = result.data[0]
-                updated_data['excel_blob_url'] = excel_blob_url
-                updated_data['excel_blob_path'] = excel_blob_path
+                if updated_data.get('sections_status') and isinstance(updated_data['sections_status'], dict):
+                    updated_data['excel_blob_url'] = updated_data['sections_status'].get('excel_blob_url')
+                    updated_data['excel_blob_path'] = updated_data['sections_status'].get('excel_blob_path')
+                else:
+                    updated_data['excel_blob_url'] = excel_blob_url
+                    updated_data['excel_blob_path'] = excel_blob_path
 
                 updated_record = OnePagerRecord(**updated_data)
                 logger.info(f"Updated one-pager record with ID: {record_id}")
@@ -141,11 +158,13 @@ class DatabaseService:
             result = self.client.table('one_pager_reports').select('*').eq('id', record_id).execute()
 
             if result.data and len(result.data) > 0:
-                # Add missing Excel blob fields if they don't exist in the database
+                # Extract Excel blob fields from sections_status if they exist
                 record_data = result.data[0]
-                if 'excel_blob_url' not in record_data:
+                if record_data.get('sections_status') and isinstance(record_data['sections_status'], dict):
+                    record_data['excel_blob_url'] = record_data['sections_status'].get('excel_blob_url')
+                    record_data['excel_blob_path'] = record_data['sections_status'].get('excel_blob_path')
+                else:
                     record_data['excel_blob_url'] = None
-                if 'excel_blob_path' not in record_data:
                     record_data['excel_blob_path'] = None
 
                 return OnePagerRecord(**record_data)
@@ -164,10 +183,12 @@ class DatabaseService:
 
             records = []
             for record in result.data:
-                # Add missing Excel blob fields if they don't exist in the database
-                if 'excel_blob_url' not in record:
+                # Extract Excel blob fields from sections_status if they exist
+                if record.get('sections_status') and isinstance(record['sections_status'], dict):
+                    record['excel_blob_url'] = record['sections_status'].get('excel_blob_url')
+                    record['excel_blob_path'] = record['sections_status'].get('excel_blob_path')
+                else:
                     record['excel_blob_url'] = None
-                if 'excel_blob_path' not in record:
                     record['excel_blob_path'] = None
                 records.append(OnePagerRecord(**record))
 
@@ -186,10 +207,12 @@ class DatabaseService:
 
             records = []
             for record in result.data:
-                # Add missing Excel blob fields if they don't exist in the database
-                if 'excel_blob_url' not in record:
+                # Extract Excel blob fields from sections_status if they exist
+                if record.get('sections_status') and isinstance(record['sections_status'], dict):
+                    record['excel_blob_url'] = record['sections_status'].get('excel_blob_url')
+                    record['excel_blob_path'] = record['sections_status'].get('excel_blob_path')
+                else:
                     record['excel_blob_url'] = None
-                if 'excel_blob_path' not in record:
                     record['excel_blob_path'] = None
                 records.append(OnePagerRecord(**record))
 
@@ -245,10 +268,12 @@ class DatabaseService:
 
             records = []
             for record in result.data:
-                # Add missing Excel blob fields if they don't exist in the database
-                if 'excel_blob_url' not in record:
+                # Extract Excel blob fields from sections_status if they exist
+                if record.get('sections_status') and isinstance(record['sections_status'], dict):
+                    record['excel_blob_url'] = record['sections_status'].get('excel_blob_url')
+                    record['excel_blob_path'] = record['sections_status'].get('excel_blob_path')
+                else:
                     record['excel_blob_url'] = None
-                if 'excel_blob_path' not in record:
                     record['excel_blob_path'] = None
                 records.append(OnePagerRecord(**record))
 
@@ -291,10 +316,19 @@ class DatabaseService:
             # Add updated timestamp
             update_data['updated_at'] = datetime.utcnow().isoformat()
 
-            # Remove Excel blob fields if they don't exist in the database yet
+            # Store Excel blob fields in sections_status as a temporary workaround
             # This is a temporary workaround until the database schema is updated
             excel_blob_url = update_data.pop('excel_blob_url', None)
             excel_blob_path = update_data.pop('excel_blob_path', None)
+
+            # Store Excel blob info in sections_status if we have it
+            if excel_blob_url or excel_blob_path:
+                if 'sections_status' not in update_data or update_data['sections_status'] is None:
+                    update_data['sections_status'] = {}
+                if not isinstance(update_data['sections_status'], dict):
+                    update_data['sections_status'] = {}
+                update_data['sections_status']['excel_blob_url'] = excel_blob_url
+                update_data['sections_status']['excel_blob_path'] = excel_blob_path
 
             # Build the query
             query = self.client.table('one_pager_reports').update(update_data).eq('id', record_id)
@@ -306,10 +340,14 @@ class DatabaseService:
             result = query.execute()
 
             if result.data and len(result.data) > 0:
-                # Add the Excel blob fields back to the updated record
+                # Extract Excel blob fields from sections_status if they exist
                 updated_data = result.data[0]
-                updated_data['excel_blob_url'] = excel_blob_url
-                updated_data['excel_blob_path'] = excel_blob_path
+                if updated_data.get('sections_status') and isinstance(updated_data['sections_status'], dict):
+                    updated_data['excel_blob_url'] = updated_data['sections_status'].get('excel_blob_url')
+                    updated_data['excel_blob_path'] = updated_data['sections_status'].get('excel_blob_path')
+                else:
+                    updated_data['excel_blob_url'] = excel_blob_url
+                    updated_data['excel_blob_path'] = excel_blob_path
 
                 updated_record = OnePagerRecord(**updated_data)
                 logger.info(f"Atomically updated one-pager record with ID: {record_id}")
