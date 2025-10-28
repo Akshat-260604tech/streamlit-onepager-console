@@ -414,6 +414,96 @@ def render_requests_table(records: List[OnePagerRecord], console: AdminConsole):
         if st.button("🔄 Refresh"):
             st.rerun()
 
+def render_request_details(records: List[OnePagerRecord]):
+    """Render detailed view for selected request"""
+    st.subheader("🔍 Request Details")
+
+    if not records:
+        st.info("No records available for detailed view.")
+        return
+
+    # Request selector
+    request_options = [f"{r.request_id} - {r.company_name} ({r.status})" for r in records]
+    selected_idx = st.selectbox("Select Request", range(len(request_options)), format_func=lambda x: request_options[x])
+
+    if selected_idx is not None:
+        selected_record = records[selected_idx]
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**Basic Information**")
+            st.write(f"**Request ID:** {selected_record.request_id}")
+            st.write(f"**Company:** {selected_record.company_name}")
+            st.write(f"**Website:** {selected_record.website_url}")
+            st.write(f"**Status:** {selected_record.status}")
+            st.write(f"**Duration:** {selected_record.duration_ms/1000:.1f}s" if selected_record.duration_ms > 0 else "N/A")
+            created_dt = pd.to_datetime(selected_record.created_at)
+            updated_dt = pd.to_datetime(selected_record.updated_at)
+            created_str = created_dt.tz_localize(None).strftime('%Y-%m-%d %H:%M:%S') if created_dt.tz else created_dt.strftime('%Y-%m-%d %H:%M:%S')
+            updated_str = updated_dt.tz_localize(None).strftime('%Y-%m-%d %H:%M:%S') if updated_dt.tz else updated_dt.strftime('%Y-%m-%d %H:%M:%S')
+            st.write(f"**Created:** {created_str}")
+            st.write(f"**Updated:** {updated_str}")
+
+        with col2:
+            st.markdown("**File Information**")
+            st.write(f"**PPTX Filename:** {selected_record.pptx_filename or 'N/A'}")
+            st.write(f"**PPTX URL:** {selected_record.pptx_blob_url or 'N/A'}")
+            st.write(f"**PPTX Path:** {selected_record.pptx_blob_path or 'N/A'}")
+            st.write(f"**Metadata URL:** {selected_record.metadata_blob_url or 'N/A'}")
+            st.write(f"**Excel Provided:** {'Yes' if selected_record.excel_provided else 'No'}")
+            st.write(f"**Excel Filename:** {selected_record.excel_filename or 'N/A'}")
+            st.write(f"**Excel Size:** {f'{selected_record.excel_size} bytes' if selected_record.excel_size else 'N/A'}")
+            st.write(f"**Azure Upload:** {'Success' if selected_record.azure_upload_ok else 'Failed'}")
+            st.write(f"**Azure Error:** {selected_record.azure_upload_error or 'N/A'}")
+            st.write(f"**Container:** {selected_record.container or 'N/A'}")
+            st.write(f"**Folder Title:** {selected_record.folder_title or 'N/A'}")
+            st.write(f"**Base Path:** {selected_record.base_path or 'N/A'}")
+            st.write(f"**Company Logo:** {selected_record.company_logo or 'N/A'}")
+
+        # Error information
+        if selected_record.error_message:
+            st.markdown("**Error Information**")
+            st.error(f"**Error Type:** {selected_record.error_type}")
+            st.error(f"**Error Message:** {selected_record.error_message}")
+
+        # Warnings
+        if selected_record.warnings:
+            st.markdown("**Warnings**")
+            for warning in selected_record.warnings:
+                st.warning(warning)
+
+        # Sections and Data
+        st.markdown("**Sections and Generated Data**")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if selected_record.sections_status:
+                st.markdown("**Sections Status**")
+                st.json(selected_record.sections_status)
+
+            if selected_record.sections_response:
+                st.markdown("**Sections Response**")
+                st.json(selected_record.sections_response)
+
+        with col2:
+            if selected_record.section_sources:
+                st.markdown("**Section Sources**")
+                st.json(selected_record.section_sources)
+
+            if selected_record.product_images:
+                st.markdown("**Product Images**")
+                st.json(selected_record.product_images)
+
+        if selected_record.products:
+            st.markdown("**Products**")
+            st.json(selected_record.products)
+
+        # Raw JSON data
+        if st.checkbox("Show Complete Raw JSON Data"):
+            st.json(selected_record.model_dump())
+
 def main():
     """Main function to run the admin console"""
     console = AdminConsole()
