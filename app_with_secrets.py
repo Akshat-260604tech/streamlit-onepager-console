@@ -301,6 +301,9 @@ def render_requests_table(records: List[OnePagerRecord], console: AdminConsole):
         # Format Excel info
         excel_display = "❌" if not record.excel_provided else (record.excel_filename or "Yes")
 
+        # Format Excel blob URL for display
+        excel_blob_display = "❌" if not record.excel_blob_url else record.excel_blob_url
+
         # Format error message
         error_display = ""
         if record.error_message:
@@ -341,6 +344,8 @@ def render_requests_table(records: List[OnePagerRecord], console: AdminConsole):
             "Excel": excel_display,
             "Excel Filename": record.excel_filename or "N/A",
             "Excel Size": f"{record.excel_size} bytes" if record.excel_size else "N/A",
+            "Excel Blob URL": excel_blob_display,
+            "Excel Blob Path": record.excel_blob_path or "N/A",
             "Azure Upload": "Success" if record.azure_upload_ok else "Failed",
             "Azure Error": record.azure_upload_error or "N/A",
             "Container": record.container or "N/A",
@@ -387,11 +392,13 @@ def render_requests_table(records: List[OnePagerRecord], console: AdminConsole):
 
     st.dataframe(display_df, use_container_width=True)
 
-    # Show clickable links for PPTX URLs
+    # Show clickable links for PPTX and Excel URLs
     st.subheader("🔗 Direct Links")
     for i, record in enumerate(records[:10]):  # Show first 10 records
         if record.pptx_blob_url:
             st.markdown(f"**{record.company_name}**: [Download PPTX]({record.pptx_blob_url})")
+        if record.excel_blob_url:
+            st.markdown(f"**{record.company_name}**: [Download Excel]({record.excel_blob_url})")
         if record.metadata_blob_url:
             st.markdown(f"**{record.company_name}**: [View Metadata]({record.metadata_blob_url})")
 
@@ -454,6 +461,8 @@ def render_request_details(records: List[OnePagerRecord]):
             st.write(f"**Excel Provided:** {'Yes' if selected_record.excel_provided else 'No'}")
             st.write(f"**Excel Filename:** {selected_record.excel_filename or 'N/A'}")
             st.write(f"**Excel Size:** {f'{selected_record.excel_size} bytes' if selected_record.excel_size else 'N/A'}")
+            st.write(f"**Excel Blob URL:** {selected_record.excel_blob_url or 'N/A'}")
+            st.write(f"**Excel Blob Path:** {selected_record.excel_blob_path or 'N/A'}")
             st.write(f"**Azure Upload:** {'Success' if selected_record.azure_upload_ok else 'Failed'}")
             st.write(f"**Azure Error:** {selected_record.azure_upload_error or 'N/A'}")
             st.write(f"**Container:** {selected_record.container or 'N/A'}")
@@ -556,6 +565,8 @@ def main():
                 excel_provided=random.choice([True, False]),
                 excel_filename=f"sample_{i+1}.xlsx" if random.choice([True, False]) else None,
                 excel_size=random.randint(10000, 100000) if random.choice([True, False]) else None,
+                excel_blob_url=f"https://example.com/sample_{i+1}.xlsx" if random.choice([True, False]) else None,
+                excel_blob_path=f"one-pagers/sample_{i+1}/excel/sample_{i+1}.xlsx" if random.choice([True, False]) else None,
                 sections_status={"about": {"ok": True}, "operations": {"ok": False}} if random.choice([True, False]) else None,
                 sections_response={"about": "Sample response"} if random.choice([True, False]) else None,
                 section_sources={"about": ["https://example.com"]} if random.choice([True, False]) else None,
