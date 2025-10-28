@@ -87,7 +87,9 @@ class RequestManager:
         container: str = "bynd-dev",
         excel_provided: bool = False,
         excel_filename: Optional[str] = None,
-        excel_size: Optional[int] = None
+        excel_size: Optional[int] = None,
+        excel_blob_url: Optional[str] = None,
+        excel_blob_path: Optional[str] = None
     ) -> Optional[OnePagerRecord]:
         """Create a new request record in the database"""
         try:
@@ -106,6 +108,8 @@ class RequestManager:
                 excel_provided=excel_provided,
                 excel_filename=excel_filename,
                 excel_size=excel_size,
+                excel_blob_url=excel_blob_url,
+                excel_blob_path=excel_blob_path,
             )
 
             created_record = await self.db_service.create_one_pager_record(record)
@@ -179,6 +183,9 @@ class RequestManager:
                     "updated_at": record.updated_at,
                     "duration_ms": record.duration_ms,
                     "pptx_blob_url": record.pptx_blob_url,
+                    "excel_blob_url": record.excel_blob_url,
+                    "excel_provided": record.excel_provided,
+                    "excel_filename": record.excel_filename,
                     "error_message": record.error_message,
                     "warnings": record.warnings
                 }
