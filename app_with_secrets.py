@@ -24,11 +24,9 @@ try:
         os.environ['SUPABASE_URL'] = st.secrets['supabase']['url']
         os.environ['SUPABASE_ANON_KEY'] = st.secrets['supabase']['key']
     else:
-        st.error("❌ Supabase secrets not found. Please configure your Streamlit secrets.")
-        st.stop()
+        st.warning("⚠️ Supabase secrets not found. App will run in demo mode.")
 except Exception as e:
-    st.error(f"❌ Error loading secrets: {str(e)}")
-    st.stop()
+    st.warning(f"⚠️ Error loading secrets: {str(e)}. App will run in demo mode.")
 
 from app.services.database_service import DatabaseService, OnePagerRecord
 from app.services.request_manager import request_manager
@@ -80,19 +78,21 @@ class AdminConsole:
             self.db_service = DatabaseService()
             st.success("✅ Database connected successfully")
         except Exception as e:
-            st.error(f"❌ Database connection failed: {str(e)}")
-            st.info("Please check your Streamlit secrets configuration")
-            st.stop()
+            st.warning(f"⚠️ Database connection failed: {str(e)}")
+            st.info("App will run in demo mode with sample data")
+            self.db_service = None
 
     def get_recent_records(self, limit: int = 100) -> List[OnePagerRecord]:
         """Get recent records from database"""
+        if self.db_service is None:
+            return []
         try:
             records = asyncio.run(self.db_service.get_recent_one_pager_records(limit))
             return records or []
         except Exception as e:
             print(f"Database error: {str(e)}")
-            st.error(f"Database connection error: {str(e)}")
-            st.info("Please check your internet connection and Supabase credentials")
+            st.warning(f"Database connection error: {str(e)}")
+            st.info("App will show sample data instead")
             return []
 
     def get_records_by_company(self, company_name: str) -> List[OnePagerRecord]:
